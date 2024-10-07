@@ -13,26 +13,26 @@ public class EmployeeGeneration {
     public EmployeeGeneration() throws SQLException {
         con = runDatabaseConnection();
         mainList = populateList();
-        depts = populateDepts();
+        depts = new ArrayList<>();
     }
 
-    private List<Departments> populateDepts() throws SQLException {
-        String query ="SELECT * FROM dept";
-        List<Departments> departments = new ArrayList<>();
-        Statement stmt = con.createStatement();
-        ResultSet rs = stmt.executeQuery(query);
-
-        while(rs.next()) {
-            int deptNo = rs.getInt("DEPTNO");
-
-            String dName = rs.getString("DNAME");
-
-            String location = rs.getString("LOC");
-            Departments dept = new Departments(deptNo, dName, location);
-            depts.add(dept);
-        }
-        return departments;
-    }
+//    private List<Departments> populateDepts() throws SQLException {
+//        String query = "SELECT * FROM dept";
+//        List<Departments> departments = new ArrayList<>();
+//        Statement stmt = con.createStatement();
+//        ResultSet rs = stmt.executeQuery(query);
+//
+//        while (rs.next()) {
+//            int deptNo = rs.getInt("DEPTNO");
+//
+//            String dName = rs.getString("DNAME");
+//
+//            String location = rs.getString("LOC");
+//            Departments dept = new Departments(deptNo, dName, location);
+//            depts.add(dept);
+//        }
+//        return departments;
+//    }
 
     public List<Employee> getEmployeeList() {
         return mainList;
@@ -93,11 +93,11 @@ public class EmployeeGeneration {
     public void aPrintAllEmpAndNo() {
         System.out.println("All employees and numbers");
         for (Employee e : mainList) {
-            System.out.println("Name: "+e.geteName()+" EmpNo:"+e.getEmpNo());
+            System.out.println("Name: " + e.geteName() + " EmpNo:" + e.getEmpNo());
         }
     }
 
-    public void bPrintAllEmpNoAndNamesStartWithS()  {
+    public void bPrintAllEmpNoAndNamesStartWithS() {
         System.out.println("Names that start with S:");
         for (Employee e : mainList) {
             if (e.geteName().startsWith("S")) {
@@ -107,17 +107,17 @@ public class EmployeeGeneration {
         System.out.println(" ");
     }
 
-    public void cPrintTotalSalaryOfEmps()  {
+    public void cPrintTotalSalaryOfEmps() {
         int totalSalary = 0;
 
         System.out.println("Total Salary cost:");
         for (Employee e : mainList) {
             totalSalary += e.getSal();
         }
-        System.out.println("Total Salary: "+totalSalary);
+        System.out.println("Total Salary: " + totalSalary);
     }
 
-    public void dReturnHighestSalariedPerson()  {
+    public void dReturnHighestSalariedPerson() {
         Employee em = mainList.getFirst();
         System.out.println("Highest Salaried Person:");
         for (Employee e : mainList) {
@@ -125,18 +125,18 @@ public class EmployeeGeneration {
                 em = e;
             }
         }
-        System.out.println("Employee with highest salary: "+" Name:"+em.geteName()+" Salary: "+em.getSal());
+        System.out.println("Employee with highest salary: " + " Name:" + em.geteName() + " Salary: " + em.getSal());
 
     }
 
-    public void eReturnNumberOfEmpWhereSalaryHigherThanAverage()  {
+    public void eReturnNumberOfEmpWhereSalaryHigherThanAverage() {
         System.out.println("Emps with salary higher than average");
         int totalSalary = 0;
         for (Employee e : mainList) {
             totalSalary += e.getSal();
         }
         int listSize = mainList.size();
-        int averageSalary = totalSalary/listSize;
+        int averageSalary = totalSalary / listSize;
         List<Employee> empsMoreThanAvgSal = new ArrayList<>();
         for (Employee e : mainList) {
             if (e.getSal() > averageSalary) {
@@ -145,46 +145,45 @@ public class EmployeeGeneration {
         }
 
         for (Employee e : empsMoreThanAvgSal) {
-            System.out.println(e.geteName()+": SAL:"+e.getSal());
+            System.out.println(e.geteName() + ": SAL:" + e.getSal());
         }
 
     }
 
     public void fReturnEmployeesWithAGivenManagerNumber(Integer mgrNo) {
         List<Employee> listWithSpecificManagers = new ArrayList<>();
-        System.out.println("Emps with "+mgrNo+" as manager");
+        System.out.println("Emps with " + mgrNo + " as manager");
         for (Employee e : mainList) {
             if (Objects.equals(e.getMGR(), mgrNo)) { // Skal bruge Objects.equals for at håndtere null-værdier.
                 listWithSpecificManagers.add(e);
             }
         }
         for (Employee e : listWithSpecificManagers) {
-            System.out.println("Name: "+e.geteName()+" MGR: "+e.getMGR());
+            System.out.println("Name: " + e.geteName() + " MGR: " + e.getMGR());
         }
     }
 
-    public void getDeptNamesWithMoreThanFiveEmployees() {
-        Map<Integer, Integer> deptEmployeeCount = new HashMap<>();
+    public void getDeptNamesWithMoreThanFiveEmployees() throws SQLException {
+        String query = "SELECT dept.DEPTNO, dept.DNAME, dept.LOC  FROM dept JOIN emp ON dept.DEPTNO = emp.DEPTNO " +
+                "GROUP BY dept.DEPTNO, dept.DNAME, dept.LOC HAVING COUNT(emp.ENAME) > 5";
 
-        // Count employees per department
-        for (Employee emp : mainList) {
-            deptEmployeeCount.put(emp.getDeptNo(), deptEmployeeCount.getOrDefault(emp.getDeptNo(), 0) + 1);
+        Statement stmt = con.createStatement();  // Assume 'con' is your active database connection
+        ResultSet rs = stmt.executeQuery(query);
+
+        System.out.println("*** Departments with more than 5 emps: ");
+        while (rs.next()) {
+            int deptNo = rs.getInt("DEPTNO");
+            String dName = rs.getString("DNAME");
+            String loc = rs.getString("LOC");
+
+            // Create new Departments object and add it to the list
+            Departments dept = new Departments(deptNo, dName, loc);
+            depts.add(dept);
         }
 
-        List<String> departmentNames = new ArrayList<>();
-        // Find department names with more than 5 employees
-        for (Departments dept : depts) {
-            if (deptEmployeeCount.getOrDefault(dept.getDeptNo(), 0) > 5) {
-                departmentNames.add(dept.getdName());
-            }
+        for (Departments d : depts) {
+            System.out.println("Name: " + d.getdName());
         }
-
-        for (String s : departmentNames) {
-            System.out.println(s);
-    }
-
-
-
 
     }
 }
